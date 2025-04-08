@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"waveshare_rgb_lcd_port.h": "c",
+			"modbus_content.h": "c",
+			"rs485_handler.h": "c",
+			"my_custom_fonts.h": "c",
+			"home_content.h": "c"
+		}
+	}
+}
