@@ -17,7 +17,7 @@ void create_home_content(lv_obj_t *parent)
     
     // Alaotsikko
     lv_obj_t *subtitle = lv_label_create(parent);
-    lv_label_set_text(subtitle, "VALMIUSTILA");
+    lv_label_set_text(subtitle, "VALMIUSTILASSA");
     lv_obj_add_style(subtitle, &style_subtitle, 0);
     lv_obj_align_to(subtitle, main_title, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
 
