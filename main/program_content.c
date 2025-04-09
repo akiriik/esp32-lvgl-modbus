@@ -54,12 +54,12 @@ static uint8_t current_program_selection = 0; // 1, 2 tai 3 riippuen mikä ohjel
 static bool is_screen_active = false;
 
 /**
- * @brief Lue ohjelmanimi Modbus-protokollan avulla
+ * @brief Paranneltu funktio ohjelman nimen lukemiseen ForTest-laitteelta Modbus-RTU:lla
  * 
  * @param program_number Ohjelman numero (0-29)
  * @param name_buffer Puskuri, johon nimi tallennetaan
  * @param buffer_size Puskurin koko
- * @return true jos lukeminen onnistui, false jos epäonnistui
+ * @return true jos luku onnistui, false jos epäonnistui
  */
 static bool read_program_name(uint8_t program_number, char* name_buffer, size_t buffer_size) {
     // Alusta puskuri oletusarvolla
@@ -69,7 +69,9 @@ static bool read_program_name(uint8_t program_number, char* name_buffer, size_t 
     uint16_t base_address = 0xEA74;
     uint16_t address = base_address + program_number;
     
-    // Luodaan Modbus-komento ohjelman nimen lukemiseen (8 rekisteriä = 16 merkkiä)
+    ESP_LOGI(TAG, "Luetaan ohjelmanimi %d osoitteesta 0x%04X", program_number + 1, address);
+    
+    // Luo Modbus-komento ohjelman nimen lukemiseen (8 rekisteriä = 16 merkkiä)
     // Read Holding Registers (0x03)
     uint8_t tx_buffer[8];
     tx_buffer[0] = MODBUS_DEFAULT_SLAVE_ID;  // Slave ID
@@ -84,6 +86,11 @@ static bool read_program_name(uint8_t program_number, char* name_buffer, size_t 
     tx_buffer[6] = crc & 0xFF;               // CRC low byte
     tx_buffer[7] = (crc >> 8) & 0xFF;        // CRC high byte
     
+    // Logita pyyntö debuggausta varten
+    ESP_LOGI(TAG, "TX: %02X %02X %02X %02X %02X %02X %02X %02X",
+        tx_buffer[0], tx_buffer[1], tx_buffer[2], tx_buffer[3],
+        tx_buffer[4], tx_buffer[5], tx_buffer[6], tx_buffer[7]);
+    
     // Tyhjennä väylä varmuuden vuoksi
     rs485_flush();
     
@@ -94,15 +101,24 @@ static bool read_program_name(uint8_t program_number, char* name_buffer, size_t 
         return false;
     }
     
-    // Vastauspuskuri (vastauksessa on control bytes + 16 merkkiä + CRC)
-    uint8_t rx_buffer[40];
+    // Vastauspuskuri (vastauksessa on control bytes + 16 bytes dataa + CRC)
+    uint8_t rx_buffer[32];
     memset(rx_buffer, 0, sizeof(rx_buffer));
     
     // Odota vastausta hieman pidemmällä aikarajalla
     int rx_length = rs485_receive_data(rx_buffer, sizeof(rx_buffer), pdMS_TO_TICKS(500));
     
-    // Tarkista vastauksen pituus: 1 (slave) + 1 (fc) + 1 (byte count) + 16 (data) + 2 (crc) = 21
-    if (rx_length < 21) {
+    // Logita vastaus debuggausta varten
+    if (rx_length > 0) {
+        ESP_LOGI(TAG, "RX (%d tavua):", rx_length);
+        for (int i = 0; i < rx_length && i < 30; i++) {
+            ESP_LOGI(TAG, "  tavu %d: 0x%02X (%c)", i, rx_buffer[i], 
+                    (rx_buffer[i] >= 32 && rx_buffer[i] <= 126) ? rx_buffer[i] : '.');
+        }
+    }
+    
+    // Tarkista vastauksen pituus: 1 (slave) + 1 (fc) + 1 (byte count) + data + 2 (crc)
+    if (rx_length < 5) {
         ESP_LOGE(TAG, "Vastaanotto epäonnistui tai väärä pituus: %d", rx_length);
         return false;
     }
@@ -113,9 +129,19 @@ static bool read_program_name(uint8_t program_number, char* name_buffer, size_t 
         return false;
     }
     
-    // Byte count kertoo kuinka monta tavua dataa on
+    // Tarkista CRC
+    if (rx_length >= 2) {
+        uint16_t response_crc = rx_buffer[rx_length - 1] << 8 | rx_buffer[rx_length - 2];
+        uint16_t calc_crc = modbus_crc16(rx_buffer, rx_length - 2);
+        if (response_crc != calc_crc) {
+            ESP_LOGE(TAG, "CRC ei täsmää: odotettu 0x%04X, saatu 0x%04X", calc_crc, response_crc);
+            return false;
+        }
+    }
+    
+    // Byte count kertoo kuinka monta tavua dataa tulee
     uint8_t byte_count = rx_buffer[2];
-    if (byte_count < 16) {
+    if (byte_count < 1) {
         ESP_LOGE(TAG, "Liian lyhyt data: %d tavua", byte_count);
         return false;
     }
@@ -124,7 +150,7 @@ static bool read_program_name(uint8_t program_number, char* name_buffer, size_t 
     memset(name_buffer, 0, buffer_size);
     int name_length = 0;
     
-    // ASCII-koodattu merkki merkiltä
+    // ASCII koodattu merkki merkiltä
     for (int i = 0; i < byte_count && i < buffer_size - 1; i++) {
         char ch = rx_buffer[3 + i];
         // Jos vastaan tulee nollamerkki tai muu ei-tulostettava merkki, lopetetaan
@@ -138,9 +164,10 @@ static bool read_program_name(uint8_t program_number, char* name_buffer, size_t 
     name_buffer[name_length] = '\0';
     
     // Logita tulos debuggausta varten
-    ESP_LOGI(TAG, "Luettu ohjelmanimi %d: '%s'", program_number + 1, name_buffer);
+    ESP_LOGI(TAG, "Luettu ohjelmanimi %d: '%s' (pituus: %d)", 
+             program_number + 1, name_buffer, name_length);
     
-    // Jos nimi on tyhjä, käytetään oletusta
+    // Jos nimi on tyhjä, käytä oletusta
     if (name_length == 0) {
         snprintf(name_buffer, buffer_size, "Ohjelma %d", program_number + 1);
         return false;
@@ -394,22 +421,22 @@ static void program_checkbox_event_cb(lv_event_t* e) {
 }
 
 /**
- * @brief Tallenna painikkeen tapahtumakäsittelijä
+ * @brief Tallenna-painikkeen tapahtumakäsittelijä
  */
 static void save_button_event_cb(lv_event_t* e) {
     uint32_t code = lv_event_get_code(e);
     if (code != LV_EVENT_CLICKED) return;
     
-    ESP_LOGI(TAG, "Tallennetaan ohjelmavalinnat: P1=%d, P2=%d, P3=%d, P2_enable=%d, P3_enable=%d", 
+    ESP_LOGI(TAG, "Tallennetaan ohjelmavalinnat: P1=%d, P2=%d, P3=%d, P2_käytössä=%d, P3_käytössä=%d", 
         program_selection.program1, 
         program_selection.program2, 
         program_selection.program3,
         program_selection.program2_enabled,
         program_selection.program3_enabled);
     
-    // Lähetä Modbus-komento ohjelman 1 valitsemiseksi (osoite 0x0060 dokumentaatiosta)
-    // Note: Program numbers are 1-based in UI but 0-based in Modbus
-    esp_err_t ret = modbus_write_single_register(MODBUS_DEFAULT_SLAVE_ID, 0x0060, program_selection.program1 - 1);
+    // Lähetetään Modbus-komento ohjelman 1 valitsemiseksi (osoite 0x0060 dokumentaatiosta)
+    // TÄRKEÄÄ: ÄLÄ vähennä 1 ohjelmanumerosta - ForTest odottaa todellista ohjelmanumeroa
+    esp_err_t ret = modbus_write_single_register(MODBUS_DEFAULT_SLAVE_ID, 0x0060, program_selection.program1);
     if (ret == ESP_OK) {
         ESP_LOGI(TAG, "Ohjelma %d valittu onnistuneesti", program_selection.program1);
         lv_label_set_text(status_label, "Ohjelma valittu onnistuneesti");
