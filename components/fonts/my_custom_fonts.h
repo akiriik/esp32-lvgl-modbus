@@ -23,6 +23,9 @@
  LV_FONT_DECLARE(roboto_24);
  LV_FONT_DECLARE(roboto_26);
  LV_FONT_DECLARE(roboto_28); 
+ LV_FONT_DECLARE(roboto_18_bold); 
+ LV_FONT_DECLARE(roboto_36); 
+ LV_FONT_DECLARE(roboto_45); 
  #ifdef __cplusplus
  }
  #endif

@@ -7,6 +7,9 @@ idf_component_register(
         "roboto_24.c"
         "roboto_26.c"
         "roboto_28.c"
+        "roboto_18_bold.c"
+        "roboto_36.c"
+        "roboto_45.c"
     INCLUDE_DIRS "."
     REQUIRES lvgl__lvgl)
 
