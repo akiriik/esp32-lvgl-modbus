@@ -1,6 +1,7 @@
 #include "style_manager.h"
 #include "fonts/my_custom_fonts.h" // Muista include fontit!
 
+lv_style_t style_maintitle;
 lv_style_t style_title;
 lv_style_t style_subtitle;
 lv_style_t style_body;
@@ -9,6 +10,12 @@ lv_style_t style_button_pressed;
 
 void style_manager_init(void)
 {
+    // Maintitle style
+    lv_style_init(&style_maintitle);
+    lv_style_set_text_font(&style_maintitle, &roboto_45);
+    lv_style_set_text_letter_space(&style_maintitle, 10);
+    lv_style_set_text_color(&style_maintitle, lv_color_black());
+
     // Title style
     lv_style_init(&style_title);
     lv_style_set_text_font(&style_title, &roboto_28);
@@ -17,13 +24,13 @@ void style_manager_init(void)
 
     // Subtitle style
     lv_style_init(&style_subtitle);
-    lv_style_set_text_font(&style_subtitle, &roboto_18);
+    lv_style_set_text_font(&style_subtitle, &roboto_22);
     lv_style_set_text_letter_space(&style_subtitle, 10);
     lv_style_set_text_color(&style_subtitle, lv_color_hex(0x555555));
 
     // Body text style
     lv_style_init(&style_body);
-    lv_style_set_text_font(&style_body, &roboto_16);
+    lv_style_set_text_font(&style_body, &roboto_18);
     lv_style_set_text_letter_space(&style_body, 2);
     lv_style_set_text_color(&style_body, lv_color_black());
 

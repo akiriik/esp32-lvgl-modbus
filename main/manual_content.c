@@ -7,6 +7,8 @@
 #include "modbus_handler.h"
 #include <stdio.h>
 #include <string.h>
+#include "fonts/my_custom_fonts.h"
+#include "style_manager.h"
 
 static const char *TAG = "manual_content";
 
@@ -52,7 +54,7 @@ static void create_relay_button(lv_obj_t* parent, int relay_num, int x_pos, int 
     snprintf(label_text, sizeof(label_text), "RELE %d", relay_num);
     lv_label_set_text(relay_label, label_text);
     lv_obj_set_style_text_color(relay_label, lv_color_hex(0xFFFFFF), 0);
-    lv_obj_set_style_text_font(relay_label, &lv_font_montserrat_16, 0);
+    lv_obj_add_style(relay_label, &style_body, 0);
     lv_obj_center(relay_label);
     
     lv_obj_t* status_led = lv_obj_create(relay_btn);
@@ -63,7 +65,7 @@ static void create_relay_button(lv_obj_t* parent, int relay_num, int x_pos, int 
     lv_obj_set_style_border_width(status_led, 0, 0);
     lv_obj_set_style_shadow_width(status_led, 0, 0);
     lv_obj_set_style_bg_opa(status_led, LV_OPA_COVER, 0);
-    lv_obj_align(status_led, LV_ALIGN_TOP_RIGHT, -5, 5);
+    lv_obj_align(status_led, LV_ALIGN_TOP_RIGHT, 10, -5);
     
     relay_leds[relay_index] = status_led;
     
@@ -72,9 +74,9 @@ static void create_relay_button(lv_obj_t* parent, int relay_num, int x_pos, int 
 
 void manual_content_create(lv_obj_t *parent) {    
     lv_obj_t* header = lv_label_create(parent);
-    lv_label_set_text(header, "Kasikaytto");
+    lv_label_set_text(header, "KÄSIKÄYTTÖ");
     lv_obj_align(header, LV_ALIGN_TOP_MID, 0, 20);
-    lv_obj_set_style_text_font(header, &lv_font_montserrat_16, 0);
+    lv_obj_add_style(header, &style_subtitle, 0);
     
     create_relay_button(parent, 1, 80, 80);
     create_relay_button(parent, 2, 200, 80);

@@ -3,6 +3,7 @@
 #include "lvgl.h"
 
 // Fonttien ja värien tyylit
+extern lv_style_t style_maintitle;
 extern lv_style_t style_title;
 extern lv_style_t style_subtitle;
 extern lv_style_t style_body;

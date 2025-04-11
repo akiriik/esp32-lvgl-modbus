@@ -474,11 +474,6 @@ void program_content_create(lv_obj_t *parent) {
     lv_obj_align_to(update_spinner, update_btn, LV_ALIGN_OUT_RIGHT_MID, 10, 0);
     lv_obj_add_flag(update_spinner, LV_OBJ_FLAG_HIDDEN);  // Piilotetaan aluksi
     
-    // Selitys
-    lv_obj_t* instructions = lv_label_create(parent);
-    lv_label_set_text(instructions, "Valitse ajettavat testausohjelmat");
-    lv_obj_align(instructions, LV_ALIGN_TOP_MID, 0, 50);
-    
     // Ohjelma paneelien luonti
     const int panel_width = 220;
     const int panel_height = 220;
@@ -590,15 +585,15 @@ void program_content_create(lv_obj_t *parent) {
     
     // Tallennus-painike
     lv_obj_t* save_btn = lv_btn_create(parent);
-    lv_obj_set_size(save_btn, 200, 60);
-    lv_obj_align(save_btn, LV_ALIGN_BOTTOM_MID, 0, -80);
+    lv_obj_set_size(save_btn, 180, 60);
+    lv_obj_align(save_btn, LV_ALIGN_TOP_MID, 280, 15);
     lv_obj_set_style_bg_color(save_btn, lv_color_hex(0x4CAF50), 0);
     lv_obj_add_event_cb(save_btn, save_button_event_cb, LV_EVENT_ALL, NULL);
     
     lv_obj_t* save_label = lv_label_create(save_btn);
     lv_label_set_text(save_label, "TALLENNA");
     lv_obj_center(save_label);
-    lv_obj_set_style_text_font(save_label, &lv_font_montserrat_18, 0);
+    lv_obj_set_style_text_font(save_label, &roboto_24, 0);
     
     // Tilatieto
     status_label = lv_label_create(parent);
